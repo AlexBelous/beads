@@ -1342,7 +1342,15 @@ func (m migrationSource) currentVersion(ctx context.Context, db DBConn) (int, er
 	// created afterwards on other connections stay invisible to this one for
 	// the rest of its life in the pool (be-bv7x).
 	var cursorExists int
-	if err := db.QueryRowContext(ctx,
+	if useShowProbes {
+		present, err := showTableExists(ctx, db, m.cursorTable)
+		if err != nil {
+			return 0, fmt.Errorf("probing %s existence: %w", m.cursorTable, err)
+		}
+		if present {
+			cursorExists = 1
+		}
+	} else if err := db.QueryRowContext(ctx,
 		"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?",
 		m.cursorTable,
 	).Scan(&cursorExists); err != nil {
@@ -1437,6 +1445,9 @@ func (m migrationSource) cursorRealityFloor(ctx context.Context, db DBConn) (int
 // issueRowCounter is: it lets the cursor-reality tests exercise the real
 // decision without a live database.
 var sentinelTableExists = func(ctx context.Context, db DBConn, table string) (bool, error) {
+	if useShowProbes {
+		return showTableExists(ctx, db, table)
+	}
 	var n int
 	if err := db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES

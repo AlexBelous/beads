@@ -451,6 +451,9 @@ func orderDependencyRekeys(table string, candidates []depRekey, byCurrentID map[
 
 // columnExists reports whether table.column is present in the current schema.
 func columnExists(ctx context.Context, db DBConn, table, column string) (bool, error) {
+	if useShowProbes {
+		return showColumnExists(ctx, db, table, column)
+	}
 	var count int
 	if err := db.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
