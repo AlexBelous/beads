@@ -206,15 +206,28 @@ Examples:
 		}
 
 		commandDidExplicitDoltCommit = true
-		if err := store.Commit(ctx, vcCommitMessage); err != nil {
+		// CommitAll, not Commit: the explicit command promises "all current
+		// changes", so it must sweep in out-of-band writes (config above all,
+		// which server-mode Commit excludes per GH#2455) and must report an
+		// honest no-op instead of printing "Created commit" against the
+		// unchanged HEAD. Its committed bool is the atomic signal the old
+		// HEAD-before/HEAD-after comparison approximated (the mybd-z9h7j
+		// threading: CommitPending already had the shape), so the concurrent-
+		// writer misattribution race that comparison carried is gone.
+		committed, err := store.CommitAll(ctx, vcCommitMessage)
+		if err != nil {
 			if isDoltNothingToCommit(err) {
-				if jsonOutput {
-					return outputJSON(map[string]interface{}{"committed": false, "message": "nothing to commit"})
-				}
-				fmt.Println("Nothing to commit")
-				return nil
+				committed = false
+			} else {
+				return HandleErrorRespectJSON("failed to commit: %v", err)
 			}
-			return HandleErrorRespectJSON("failed to commit: %v", err)
+		}
+		if !committed {
+			if jsonOutput {
+				return outputJSON(map[string]interface{}{"committed": false, "message": "nothing to commit"})
+			}
+			fmt.Println("Nothing to commit")
+			return nil
 		}
 
 		hash, err := store.GetCurrentCommit(ctx)
