@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, 'release/**']
   # Allow manual trigger
   workflow_dispatch:
 
@@ -95,7 +95,7 @@ jobs:
           git config --global user.email "ci@beads.test"
 
       - name: Install Dolt
-        run: curl -fsSL https://github.com/dolthub/dolt/releases/latest/download/install.sh | sudo bash
+        run: ./scripts/ci/install-dolt.sh
 
       - name: Configure Dolt
         run: |
@@ -109,7 +109,7 @@ jobs:
         # has a known cleanup race (see beads issue: TestCreateWithParentFlag
         # TempDir RemoveAll "directory not empty" flake). Keep the tag in sync
         # with internal/testutil/testdoltcommon.go:DoltDockerImage.
-        run: docker pull dolthub/dolt-sql-server:2.2.0
+        run: ./scripts/ci/pull-dolt-image.sh
 
       - name: Cache baseline binary
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5

@@ -122,6 +122,7 @@ func TestProxiedServerShow(t *testing.T) {
 		if m["priority"] != float64(1) {
 			t.Errorf("priority: got %v, want 1", m["priority"])
 		}
+		assertLiveRevisionToken(t, m["revision"])
 		if _, ok := m["created_at"]; !ok {
 			t.Errorf("missing created_at")
 		}
@@ -548,12 +549,14 @@ func TestProxiedServerShow2(t *testing.T) {
 		bdProxiedCreate(t, bd, p.dir, "Related A",
 			"--type", "task", "--deps", "related:"+hub.ID)
 
+		// Groups are named from the hub's end, since every ref points at it:
+		// the hub BLOCKS the issue that named it as a blocker.
 		out := bdProxiedShowRaw(t, bd, p.dir, hub.ID, "--refs")
-		if !strings.Contains(out, "blocks") {
-			t.Errorf("expected 'blocks' group in --refs output: %s", out)
+		if !strings.Contains(out, "BLOCKS") {
+			t.Errorf("expected 'BLOCKS' group in --refs output: %s", out)
 		}
-		if !strings.Contains(out, "related") {
-			t.Errorf("expected 'related' group in --refs output: %s", out)
+		if !strings.Contains(out, "RELATED") {
+			t.Errorf("expected 'RELATED' group in --refs output: %s", out)
 		}
 	})
 
