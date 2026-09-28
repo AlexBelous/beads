@@ -685,6 +685,9 @@ func wispDependenciesSplitTargetBackfillSQL() []string {
 }
 
 func schemaTableExists(ctx context.Context, db DBConn, table string) (bool, error) {
+	if useShowProbes {
+		return showTableExists(ctx, db, table)
+	}
 	var count int
 	if err := db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
@@ -696,6 +699,9 @@ func schemaTableExists(ctx context.Context, db DBConn, table string) (bool, erro
 }
 
 func schemaColumnExists(ctx context.Context, db DBConn, table, column string) (bool, error) {
+	if useShowProbes {
+		return showColumnExists(ctx, db, table, column)
+	}
 	var count int
 	if err := db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
