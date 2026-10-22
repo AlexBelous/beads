@@ -48,6 +48,9 @@ func ClaimIssueInTx(ctx context.Context, tx DBTX, id string, actor string) (*Cla
 	if err != nil {
 		return nil, fmt.Errorf("failed to get issue for claim: %w", err)
 	}
+	if err := EnforceClaimUnblockedInTx(ctx, tx, oldIssue, actor); err != nil {
+		return nil, err
+	}
 
 	now := time.Now().UTC()
 
