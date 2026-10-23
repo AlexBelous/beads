@@ -57,10 +57,17 @@ func leaseTTL(ctx context.Context) time.Duration {
 // column default) so a freshly-claimed row is always distinguishable from a
 // never-touched one.
 //
+// Opt-in exception: a real is_blocked 0->1 transition for stored boolean
+// claim.require_unblocked=true MUST also remint row_lock, using
+// BlockingReadinessRowLockClause. That profile explicitly includes newly
+// blocking dependencies in RowVersion/admission; a staged claim must conflict
+// when such a transition commits first. Legacy auxiliary refreshes retain the
+// exemption below; unmark/no-op refreshes do not remint either.
+//
 // INVARIANT: any path that mutates status, assignee, or started_at on an
 // in_progress issue MUST rewrite row_lock — that is the set the reclaim/close
 // races care about (claim, close, updateIssueInTx, reclaim, unclaim all do).
-// Paths that touch only orthogonal cells (is_blocked, compaction_level,
+// Outside that opt-in exception, paths that touch only orthogonal cells (is_blocked, compaction_level,
 // dependency metadata, rename, or reopen — which acts on closed rows) are safe
 // to merge with a reclaim and intentionally do NOT rewrite it. Heartbeats no
 // longer touch the issues row at all (bd-lrgn1): the lease lives in the
@@ -80,7 +87,7 @@ func leaseTTL(ctx context.Context) time.Duration {
 // whole-row CAS over a cell derived from OTHER rows. (The PR's second
 // exemption of this kind, the lease heartbeat, no longer arises here — since
 // bd-lrgn1 heartbeats never touch the issues row at all.) So the invariant
-// cuts both ways: status/ownership writes MUST remint, aux-marker writes MUST
+// cuts both ways: status/ownership writes MUST remint, legacy aux-marker writes MUST
 // NOT. The remint direction is enforced at build time by
 // TestAllIssueRowWritesStampRowLock (row_lock_guard_test.go), whose exemption
 // markers are the machine-readable form of this list — widen the stamping

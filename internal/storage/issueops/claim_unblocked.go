@@ -65,3 +65,15 @@ func EnforceClaimUnblockedInTx(ctx context.Context, tx DBTX, issue *types.Issue,
 	}
 	return nil
 }
+
+// BlockingReadinessRowLockClause joins the existing claim conflict token only
+// for stored boolean opt-ins. Use it in an UPDATE already restricted to an
+// actual is_blocked 0->1 transition. For these issues a newly blocking dependency
+// changes admission, so RowVersion intentionally advances. Legacy auxiliary
+// refreshes keep their token and timestamp. alias must be a fixed table alias.
+func BlockingReadinessRowLockClause(alias string) string {
+	return fmt.Sprintf(`%[1]s.row_lock = CASE
+        WHEN JSON_TYPE(JSON_EXTRACT(%[1]s.metadata, '$."claim.require_unblocked"')) = 'BOOLEAN'
+         AND JSON_UNQUOTE(JSON_EXTRACT(%[1]s.metadata, '$."claim.require_unblocked"')) = 'true'
+        THEN %[2]d ELSE %[1]s.row_lock END`, alias, freshRowLock())
+}

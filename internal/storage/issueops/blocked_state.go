@@ -205,7 +205,7 @@ func markIsBlockedPassForIssuesInTx(ctx context.Context, tx DBTX, ids []string) 
 // An explicit assignment suppresses the ON UPDATE clause.
 func markBlockedTemplateForIssues() string {
 	return fmt.Sprintf(`
-		UPDATE issues i SET i.is_blocked = 1, i.updated_at = i.updated_at
+		UPDATE issues i SET i.is_blocked = 1, i.updated_at = i.updated_at, %s
 		WHERE i.id IN (%%s)
 		  AND i.is_blocked = 0
 		  AND i.status <> 'closed' AND i.status <> 'pinned'
@@ -244,7 +244,7 @@ func markBlockedTemplateForIssues() string {
 		        AND (%s)
 		    )
 		  )
-	`, waitsForGateBlockedSQL)
+	`, BlockingReadinessRowLockClause("i"), waitsForGateBlockedSQL)
 }
 
 func unmarkBlockedTemplateForIssues() string {
@@ -311,7 +311,7 @@ func markIsBlockedPassForWispsInTx(ctx context.Context, tx DBTX, ids []string) (
 
 func markBlockedTemplateForWisps() string {
 	return fmt.Sprintf(`
-		UPDATE wisps w SET w.is_blocked = 1, w.updated_at = w.updated_at
+		UPDATE wisps w SET w.is_blocked = 1, w.updated_at = w.updated_at, %s
 		WHERE w.id IN (%%s)
 		  AND w.is_blocked = 0
 		  AND w.status <> 'closed' AND w.status <> 'pinned'
@@ -350,7 +350,7 @@ func markBlockedTemplateForWisps() string {
 		        AND (%s)
 		    )
 		  )
-	`, waitsForGateBlockedSQL)
+	`, BlockingReadinessRowLockClause("w"), waitsForGateBlockedSQL)
 }
 
 func unmarkBlockedTemplateForWisps() string {

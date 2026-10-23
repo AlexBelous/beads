@@ -85,6 +85,8 @@ type Issue struct {
 	// decimal STRING, via RevisionToken, because the full int64 range does not
 	// survive a JSON number in a JavaScript consumer. Go consumers read
 	// RowVersion directly and never see the string.
+	// Stored claim.require_unblocked=true also advances it on a real native
+	// is_blocked 0->1 transition, invalidating a staged claim or stale CAS.
 	//
 	// Coverage is deliberately partial: it changes on claim/close/unclaim and the
 	// generic update path, but NOT on direct-UPDATE paths that rewrite text

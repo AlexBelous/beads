@@ -90,6 +90,7 @@
 5 3 TestUpdateMergeOps_DoltEngine_TwoIssues
 
 # Pinned opt-in claim dependency constraint compatibility.
+5 5 TestEmbeddedClaimReadinessAuxVersionCompatibility
 5 4 TestEmbeddedClaimReadinessConcurrentDependencyBoundary
 5 1 TestEmbeddedClaimReadinessMetadata
 5 2 TestEmbeddedClaimReadinessHolderRetry
