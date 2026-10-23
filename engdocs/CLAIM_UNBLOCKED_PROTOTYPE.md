@@ -32,3 +32,39 @@ receipt plus its ELF SHA256. It checks the real CLI metadata parser, persistence
 across fresh command processes, the remaining-blocker refusal, the legacy control,
 and the existing holder retry after a new dependency. It proves sequential behavior
 only; the concurrency and authority boundaries above remain unchanged.
+
+## Deterministic concurrent dependency characterization
+
+`TestEmbeddedClaimReadinessConcurrentDependencyBoundary` characterizes the
+limitation on the pinned embedded provider, using two real SQL sessions on one
+`OpenSQL` connector. It stages the real common/repository claim transaction,
+commits an actual `AddDependencyInTx` in the second transaction, and only then
+commits claim. No sleeps, mock engine, production database, or installed binary
+are involved. The dependency transaction leaves the ownership `row_lock`
+unchanged; a fresh session observes `open / is_blocked=true`, while the claim
+transaction still sees its earlier `is_blocked=false` snapshot. Both claims
+commit successfully. Reopening the store observes the owner, `in_progress`,
+the blocking edge, `is_blocked=true`, and one event for each operation.
+
+The characterization currently passes when that known limitation reproduces.
+It is **not** a passing final-admission guard test. Once a compatible native
+conflict contract is implemented, replace this expected-bypass assertion with
+its refusal/retry contract. These operations overlap: this result does not show
+a violation of ordinary transaction linearizability, nor a claim started after
+a fully completed dependency update. It establishes that the dependency predicate
+can become false before the claim commits. It does not reproduce concurrent
+standalone CLI processes or a separate SQL-server backend.
+
+Run the focused characterization with the canonical runner and explicit
+embedded prerequisites:
+
+```bash
+BEADS_TEST_EMBEDDED_DOLT=1 BEADS_TEST_ENV_RUN_DOLT=1 TEST_VERBOSE=1 \
+  ./scripts/test.sh -run '^TestEmbeddedClaimReadinessConcurrentDependencyBoundary$' ./internal/storage/embeddeddolt
+```
+
+Remaining Source requirement: a compatible conflict contract between opted-in
+claim and every dependency-readiness-changing writer, followed by refusal/retry
+and legacy expected-version controls. A shared SQL transaction alone is
+insufficient for the stronger commit-time readiness requirement. Do not claim
+that baseline cleanup or human review resolves this runtime boundary.
