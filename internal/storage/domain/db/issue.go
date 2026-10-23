@@ -404,6 +404,9 @@ func (r *issueSQLRepositoryImpl) Claim(ctx context.Context, id, actor string, op
 	if err != nil {
 		return domain.ClaimRowResult{}, fmt.Errorf("db: Claim %s: read old issue: %w", id, err)
 	}
+	if err := issueops.EnforceClaimUnblockedInTx(ctx, r.runner, oldIssue, actor); err != nil {
+		return domain.ClaimRowResult{}, err
+	}
 
 	table := pickIssueTable(opts.UseWispsTable)
 	now := time.Now().UTC()

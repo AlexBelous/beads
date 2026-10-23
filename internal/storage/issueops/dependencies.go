@@ -405,11 +405,11 @@ func markDirectBlockingDependencySourceInTx(ctx context.Context, tx *sql.Tx, sou
 			return nil
 		}
 		_, err := tx.ExecContext(ctx, fmt.Sprintf(`
-			UPDATE %s s SET s.is_blocked = 1, s.updated_at = s.updated_at
+			UPDATE %s s SET s.is_blocked = 1, s.updated_at = s.updated_at, %s
 			WHERE s.id = ?
 			  AND s.is_blocked = 0
 			  AND s.status <> 'closed' AND s.status <> 'pinned'
-		`, sourceTable), source)
+		`, sourceTable, BlockingReadinessRowLockClause("s")), source)
 		return err
 	}
 
@@ -420,7 +420,7 @@ func markDirectBlockingDependencySourceInTx(ctx context.Context, tx *sql.Tx, sou
 	// treat it as an independent rowset, satisfying the restriction. Dolt
 	// accepts both forms, so this is a no-op there.
 	_, err := tx.ExecContext(ctx, fmt.Sprintf(`
-		UPDATE %s s SET s.is_blocked = 1, s.updated_at = s.updated_at
+		UPDATE %s s SET s.is_blocked = 1, s.updated_at = s.updated_at, %s
 		WHERE s.id = ?
 		  AND s.is_blocked = 0
 		  AND s.status <> 'closed' AND s.status <> 'pinned'
@@ -430,7 +430,7 @@ func markDirectBlockingDependencySourceInTx(ctx context.Context, tx *sql.Tx, sou
 		    ) AS t
 		    WHERE t.status <> 'closed' AND t.status <> 'pinned'
 		  )
-	`, sourceTable, targetTable), source, target)
+	`, sourceTable, BlockingReadinessRowLockClause("s"), targetTable), source, target)
 	return err
 }
 

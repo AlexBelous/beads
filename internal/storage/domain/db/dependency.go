@@ -314,7 +314,7 @@ func (r *dependencySQLRepositoryImpl) markDirectBlockedSource(ctx context.Contex
 
 	//nolint:gosec // G201: sourceTable/targetTable are hardcoded constants
 	_, err := r.runner.ExecContext(ctx, fmt.Sprintf(`
-		UPDATE %s s SET s.is_blocked = 1, s.updated_at = s.updated_at
+		UPDATE %s s SET s.is_blocked = 1, s.updated_at = s.updated_at, %s
 		WHERE s.id = ?
 		  AND s.is_blocked = 0
 		  AND s.status <> 'closed' AND s.status <> 'pinned'
@@ -323,7 +323,7 @@ func (r *dependencySQLRepositoryImpl) markDirectBlockedSource(ctx context.Contex
 		    WHERE t.id = ?
 		      AND t.status <> 'closed' AND t.status <> 'pinned'
 		  )
-	`, sourceTable, targetTable), source, target)
+	`, sourceTable, issueops.BlockingReadinessRowLockClause("s"), targetTable), source, target)
 	return err
 }
 

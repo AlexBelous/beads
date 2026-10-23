@@ -340,11 +340,11 @@ func recomputeAllIsBlockedPassInTx(ctx context.Context, tx DBTX, table, alias, d
 //nolint:gosec // G201: table, alias, and depTable are constants from the only two callers.
 func markAllBlockedSQL(table, alias, depTable string) string {
 	return fmt.Sprintf(`
-		UPDATE %[1]s %[2]s SET %[2]s.is_blocked = 1, %[2]s.updated_at = %[2]s.updated_at
+		UPDATE %[1]s %[2]s SET %[2]s.is_blocked = 1, %[2]s.updated_at = %[2]s.updated_at, %[4]s
 		WHERE %[2]s.is_blocked = 0
 		  AND %[2]s.status <> 'closed' AND %[2]s.status <> 'pinned'
 		  AND %[2]s.id IN (%[3]s)
-	`, table, alias, shouldBeBlockedIDsUnionSQL(depTable))
+	`, table, alias, shouldBeBlockedIDsUnionSQL(depTable), BlockingReadinessRowLockClause(alias))
 }
 
 // unmarkAllBlockedSQL is the full-table analog of the batched unmark

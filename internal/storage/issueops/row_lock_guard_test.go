@@ -64,7 +64,11 @@ var sqlWriteKeywordRe = regexp.MustCompile(`(?i)\b(?:SET|VALUES|SELECT)\b`)
 //
 //   - is_blocked: the denormalized is_blocked recompute deliberately preserves
 //     updated_at (blocked_state.go x4, dependencies.go, domain/db/dependency.go)
-//     and must not remint row_lock either — an aux-marker refresh that bumped
+//     and legacy refreshes must not remint row_lock either. A stored boolean
+//     claim.require_unblocked=true explicitly makes a real 0->1 blocking
+//     transition admission-relevant; BlockingReadinessRowLockClause stamps only
+//     that opt-in case (lease.go), preserving this legacy exemption.
+//     An ordinary aux-marker refresh that bumped
 //     the token would clobber a concurrent whole-row CAS (ExpectedVersion) for
 //     no content change. Analysis absorbed from gastownhall/beads#4682.
 //     (The PR's other exemption, the lease heartbeat, is moot on main: since
